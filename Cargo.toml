@@ -1,39 +1,36 @@
 [package]
-name = "template-rs"
-version = "0.0.0"
+name = "length-delimited"
+version = "0.1.0"
 edition = "2021"
-repository = "https://github.com/al8n/template-rs"
-homepage = "https://github.com/al8n/template-rs"
-documentation = "https://docs.rs/template-rs"
-description = "A template for creating Rust open-source repo on GitHub"
+repository = "https://github.com/al8n/length-delimited"
+homepage = "https://github.com/al8n/length-delimited"
+documentation = "https://docs.rs/length-delimited"
+description = "A trait for length-delimited encoding"
 license = "MIT OR Apache-2.0"
-rust-version = "1.73"
-
-[[bench]]
-path = "benches/foo.rs"
-name = "foo"
-harness = false
+rust-version = "1.81.0"
+keywords = ["serialization", "no-std", "encoding"]
+categories = ["encoding", "no-std"]
 
 [features]
-default = ["std"]
-alloc = []
-std = []
+default = ["std", "send", "sync", "static", "error"]
+alloc = ["bstr1?/alloc"]
+std = ["bstr1?/std", "bytes1?/std"]
+
+send = [] # Add `Send` bounds
+sync = [] # Add `Sync` bounds
+static = [] # Add 'static bounds
+debug = []
+display = []
+error = ["debug", "display"] # Add `core::error::Error` bounds
 
 [dependencies]
+dbutils = { version = "0.12", default-features = false }
+paste = "1"
 
-[dev-dependencies]
-criterion = "0.5"
-tempfile = "3"
-
-[profile.bench]
-opt-level = 3
-debug = false
-codegen-units = 1
-lto = 'thin'
-incremental = false
-debug-assertions = false
-overflow-checks = false
-rpath = false
+bytes1 = { package = "bytes", version = "1", default-features = false, optional = true }
+bstr1 = { package = "bstr", version = "1", default-features = false, optional = true }
+smol_str03 = { package = "smol_str", version = "0.3", default-features = false, optional = true }
+triomphe01 = { package = "triomphe", version = "0.1", default-features = false, optional = true }
 
 [package.metadata.docs.rs]
 all-features = true
