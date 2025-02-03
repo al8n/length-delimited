@@ -52,13 +52,13 @@ mod sealed {
 
     #[cfg(all(feature = "sync", feature = "send", not(feature = "static")))]
     pub trait Bounds: Send + Sync {}
-    
+
     #[cfg(all(feature = "sync", feature = "static", not(feature = "send")))]
     pub trait Bounds: Sync + 'static {}
 
     #[cfg(all(feature = "send", feature = "static", not(feature = "sync")))]
     pub trait Bounds: Send + 'static {}
-  
+
     #[cfg(all(feature = "send", feature = "sync", feature = "static"))]
     pub trait Bounds: Send + Sync + 'static {}
   });
@@ -278,6 +278,15 @@ mod fuzz_tests {
   use super::*;
   use quickcheck_macros::quickcheck;
 
+  #[cfg(feature = "std")]
+  extern crate std;
+
+  #[cfg(all(not(feature = "std"), feature = "alloc"))]
+  extern crate alloc as std;
+
+  #[cfg(any(feature = "std", feature = "alloc"))]
+  use std::{string::String, vec, vec::Vec};
+
   // Helper function to test roundtrip property
   fn test_roundtrip<T>(value: T) -> bool
   where
@@ -350,6 +359,7 @@ mod fuzz_tests {
   }
 
   // String roundtrip test
+  #[cfg(any(feature = "std", feature = "alloc"))]
   #[quickcheck]
   fn fuzz_string_roundtrip(s: String) -> bool {
     test_roundtrip(s)
@@ -374,6 +384,7 @@ mod fuzz_tests {
 
   // Byte array roundtrip tests
   #[quickcheck]
+  #[cfg(any(feature = "std", feature = "alloc"))]
   fn fuzz_bytes_roundtrip(bytes: Vec<u8>) -> bool {
     test_roundtrip(bytes)
   }
@@ -386,6 +397,7 @@ mod fuzz_tests {
 
   // Test encoding with insufficient buffer
   #[quickcheck]
+  #[cfg(any(feature = "std", feature = "alloc"))]
   fn fuzz_insufficient_buffer(value: String, trim: NonZeroUsize) -> bool {
     let required_len = value.encoded_length_delimited_len();
     let trim: usize = trim.into();
@@ -399,6 +411,7 @@ mod fuzz_tests {
 
   // Test decoding with incomplete data
   #[quickcheck]
+  #[cfg(any(feature = "std", feature = "alloc"))]
   fn fuzz_incomplete_decode(value: String, trim: NonZeroUsize) -> bool {
     let mut buffer = vec![0u8; value.encoded_length_delimited_len()];
     let trim: usize = trim.into();
@@ -415,6 +428,7 @@ mod fuzz_tests {
 
   // Test with random buffer content
   #[quickcheck]
+  #[cfg(any(feature = "std", feature = "alloc"))]
   fn fuzz_random_buffer(buffer: Vec<u8>) -> bool {
     // Attempt to decode various types from random buffer
     // Should either succeed and roundtrip correctly, or fail gracefully
