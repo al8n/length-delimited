@@ -270,10 +270,7 @@ pub use string::*;
 
 #[cfg(test)]
 mod fuzz_tests {
-  use core::{
-    net::{Ipv4Addr, Ipv6Addr, SocketAddrV4},
-    num::NonZeroUsize,
-  };
+  use core::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4};
 
   use super::*;
   use quickcheck_macros::quickcheck;
@@ -284,6 +281,8 @@ mod fuzz_tests {
   #[cfg(all(not(feature = "std"), feature = "alloc"))]
   extern crate alloc as std;
 
+  #[cfg(any(feature = "std", feature = "alloc"))]
+  use core::num::NonZeroUsize;
   #[cfg(any(feature = "std", feature = "alloc"))]
   use std::{string::String, vec, vec::Vec};
 
