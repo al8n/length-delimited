@@ -1,20 +1,20 @@
 [package]
 name = "length-delimited"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 repository = "https://github.com/al8n/length-delimited"
 homepage = "https://github.com/al8n/length-delimited"
 documentation = "https://docs.rs/length-delimited"
-description = "A trait for length-delimited encoding"
+description = "Protobuf like length-delimited encoding/decoding"
 license = "MIT OR Apache-2.0"
 rust-version = "1.81.0"
-keywords = ["serialization", "no-std", "encoding"]
-categories = ["encoding", "no-std"]
+keywords = ["serialization", "encoding", "decoding", "leb128", "protobuf"]
+categories = ["network-programming", "no-std"]
 
 [features]
 default = ["std", "send", "sync", "static", "error"]
 alloc = ["bstr1?/alloc"]
-std = ["bstr1?/std", "bytes1?/std"]
+std = ["thiserror/default", "bstr1?/std", "bytes1?/std", "faststr02?/default"]
 
 send = [] # Add `Send` bounds
 sync = [] # Add `Sync` bounds
@@ -24,13 +24,20 @@ display = []
 error = ["debug", "display"] # Add `core::error::Error` bounds
 
 [dependencies]
-dbutils = { version = "0.12", default-features = false }
+dbutils = { version = "0.13", default-features = false }
 paste = "1"
+thiserror = { version = "2", default-features = false }
 
 bytes1 = { package = "bytes", version = "1", default-features = false, optional = true }
 bstr1 = { package = "bstr", version = "1", default-features = false, optional = true }
 smol_str03 = { package = "smol_str", version = "0.3", default-features = false, optional = true }
+faststr02 = { package = "faststr", version = "0.2", default-features = false, optional = true }
 triomphe01 = { package = "triomphe", version = "0.1", default-features = false, optional = true }
+
+[dev-dependencies]
+arbitrary = "1"
+quickcheck = "1"
+quickcheck_macros = "1"
 
 [package.metadata.docs.rs]
 all-features = true
