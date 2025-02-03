@@ -18,11 +18,11 @@ macro_rules! net_impl {
         }
 
         fn encoded_length_delimited_len(&self) -> usize {
-          self.to_bits().encoded_length_delimited_len()
+          Self::encoded_len(self)
         }
 
         fn encode_length_delimited(&self, buf: &mut [u8]) -> Result<usize, Self::Error> {
-          self.to_bits().encode_length_delimited(buf)
+          Self::encode(self, buf)
         }
 
         fn encode(&self, buf: &mut [u8]) -> Result<usize, Self::Error> {
@@ -45,8 +45,7 @@ macro_rules! net_impl {
         where
           Self: Sized,
         {
-          let (read, inner) = <$inner as LengthDelimitedDecoder>::decode_length_delimited(src)?;
-          Ok((read, $ty::from_bits(inner)))
+          Self::decode(src)
         }
       }
     )*
@@ -61,19 +60,11 @@ macro_rules! net_impl {
         }
 
         fn encoded_length_delimited_len(&self) -> usize {
-          self.ip().encoded_length_delimited_len() + 2
+          Self::encoded_len(self)
         }
 
         fn encode_length_delimited(&self, buf: &mut [u8]) -> Result<usize, Self::Error> {
-          let encoded_len = self.encoded_length_delimited_len();
-          if buf.len() < encoded_len {
-            return Err(InsufficientBuffer::with_information(encoded_len as u64, buf.len() as u64));
-          }
-
-          self.ip().encode_length_delimited(buf)?;
-          let port = self.port();
-          buf[encoded_len - 2..encoded_len].copy_from_slice(&port.to_be_bytes());
-          Ok(encoded_len)
+          Self::encode(self, buf)
         }
 
         fn encode(&self, buf: &mut [u8]) -> Result<usize, Self::Error> {
@@ -84,7 +75,7 @@ macro_rules! net_impl {
 
           self.ip().encode(buf)?;
           let port = self.port();
-          buf[encoded_len - 2..encoded_len].copy_from_slice(&port.to_be_bytes());
+          buf[encoded_len - 2..encoded_len].copy_from_slice(&port.to_le_bytes());
           Ok(encoded_len)
         }
       }
@@ -101,7 +92,7 @@ macro_rules! net_impl {
             return Err(Self::Error::IncompleteBuffer(IncompleteBuffer::with_information((read + 2) as u64, src.len() as u64)));
           }
 
-          let port = u16::from_be_bytes([src[read], src[read + 1]]);
+          let port = u16::from_le_bytes([src[read], src[read + 1]]);
           Ok((read + 2, Self::new(ip, port $(, $($defaults),* )? )))
         }
 
@@ -109,13 +100,7 @@ macro_rules! net_impl {
         where
           Self: Sized,
         {
-          let (read, ip) = $inner::decode_length_delimited(src)?;
-          if read + 2 > src.len() {
-            return Err(Self::Error::IncompleteBuffer(IncompleteBuffer::with_information((read + 2) as u64, src.len() as u64)));
-          }
-
-          let port = u16::from_be_bytes([src[read], src[read + 1]]);
-          Ok((read + 2, Self::new(ip, port $(, $($defaults),* )? )))
+          Self::decode(src)
         }
       }
     )*

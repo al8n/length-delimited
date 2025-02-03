@@ -4,8 +4,8 @@ use crate::{LengthDelimitedDecoder, LengthDelimitedEncoder};
 
 macro_rules! numbers_impl_length_delimited {
   ($($ty:ident), +$(,)?) => {
-    $(
-      paste::paste! {
+    paste::paste! {
+      $(
         impl $crate::LengthDelimitedEncoder for $ty {
           type Error = InsufficientBuffer;
 
@@ -43,14 +43,74 @@ macro_rules! numbers_impl_length_delimited {
             <Self as $crate::LengthDelimitedDecoder>::decode(src)
           }
         }
-      }
-    )*
+      )*
+    }
   };
+  (@fixed $($ty:ident), +$(,)?) => {
+    paste::paste! {
+      $(
+        impl $crate::LengthDelimitedEncoder for $ty {
+          type Error = InsufficientBuffer;
+
+          fn encoded_len(&self) -> usize {
+            core::mem::size_of::<$ty>()
+          }
+
+          fn encoded_length_delimited_len(&self) -> usize {
+            <Self as $crate::LengthDelimitedEncoder>::encoded_len(self)
+          }
+
+          fn encode_length_delimited(&self, buf: &mut [u8]) -> Result<usize, Self::Error> {
+            <Self as $crate::LengthDelimitedEncoder>::encode(self, buf)
+          }
+
+          fn encode(&self, buf: &mut [u8]) -> Result<usize, Self::Error> {
+            const SIZE: usize = core::mem::size_of::<$ty>();
+
+            if buf.len() < SIZE {
+              return Err(InsufficientBuffer::with_information(SIZE as u64, buf.len() as u64));
+            }
+
+            buf[..SIZE].copy_from_slice(&self.to_le_bytes());
+            Ok(SIZE)
+          }
+        }
+
+        impl $crate::LengthDelimitedDecoder for $ty {
+          type Error = IncompleteBuffer;
+
+          fn decode(src: &[u8]) -> Result<(usize, Self), Self::Error>
+          where
+            Self: Sized,
+          {
+            const SIZE: usize = core::mem::size_of::<$ty>();
+
+            if src.len() < SIZE {
+              return Err(IncompleteBuffer::with_information(SIZE as u64, src.len() as u64));
+            }
+
+            let mut bytes = [0u8; SIZE];
+            bytes.copy_from_slice(&src[..SIZE]);
+            Ok((SIZE, Self::from_le_bytes(bytes)))
+          }
+
+          fn decode_length_delimited(src: &[u8]) -> Result<(usize, Self), Self::Error>
+          where
+            Self: Sized,
+          {
+            <Self as $crate::LengthDelimitedDecoder>::decode(src)
+          }
+        }
+      )*
+    }
+  }
 }
 
 numbers_impl_length_delimited!(u16, i16, u32, i32, u64, i64, u128, i128,);
 
-impl_length_delimited!(i8 as u8, f32 as u32, f64 as u64,);
+numbers_impl_length_delimited!(@fixed f32, f64,);
+
+impl_length_delimited!(i8 as u8,);
 
 impl LengthDelimitedEncoder for u8 {
   type Error = InsufficientBuffer;

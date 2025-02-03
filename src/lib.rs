@@ -17,156 +17,7 @@ extern crate std;
 
 pub use sealed::{Bounds, ErrorBounds};
 
-mod sealed {
-  macro_rules! doc {
-    (@bounds { $($item:item)* }) => {
-      $(
-        /// A trait bound that bounds `Send`, `Sync`, and `'static` in possible combinations
-        ///
-        /// which can be configured with features.
-        $item
-      )*
-    };
-    (@error_bounds { $($item:item)* }) => {
-      $(
-        /// A trait bound that bounds `Debug`, `Display`, `Error`, `Send`, `Sync`, and `'static` in possible combinations
-        ///
-        /// which can be configured with features.
-        $item
-      )*
-    };
-  }
-
-  doc!(@bounds {
-    #[cfg(not(any(feature = "send", feature = "sync", feature = "static")))]
-    pub trait Bounds {}
-
-    #[cfg(all(feature = "sync", not(any(feature = "send", feature = "static"))))]
-    pub trait Bounds: Sync {}
-
-    #[cfg(all(feature = "send", not(any(feature = "sync", feature = "static"))))]
-    pub trait Bounds: Send {}
-
-    #[cfg(all(feature = "static", not(any(feature = "send", feature = "sync"))))]
-    pub trait Bounds: 'static {}
-
-    #[cfg(all(feature = "sync", feature = "send", not(feature = "static")))]
-    pub trait Bounds: Send + Sync {}
-
-    #[cfg(all(feature = "sync", feature = "static", not(feature = "send")))]
-    pub trait Bounds: Sync + 'static {}
-
-    #[cfg(all(feature = "send", feature = "static", not(feature = "sync")))]
-    pub trait Bounds: Send + 'static {}
-
-    #[cfg(all(feature = "send", feature = "sync", feature = "static"))]
-    pub trait Bounds: Send + Sync + 'static {}
-  });
-
-  #[cfg(not(any(feature = "send", feature = "sync", feature = "static")))]
-  impl<T> Bounds for T {}
-
-  #[cfg(all(feature = "sync", not(any(feature = "send", feature = "static"))))]
-  impl<T> Bounds for T where T: Sync {}
-
-  #[cfg(all(feature = "send", not(any(feature = "sync", feature = "static"))))]
-  impl<T> Bounds for T where T: Send {}
-
-  #[cfg(all(feature = "static", not(any(feature = "send", feature = "sync"))))]
-  impl<T> Bounds for T where T: 'static {}
-
-  #[cfg(all(feature = "sync", feature = "send", not(feature = "static")))]
-  impl<T> Bounds for T where T: Send + Sync {}
-
-  #[cfg(all(feature = "sync", feature = "static", not(feature = "send")))]
-  impl<T> Bounds for T where T: Sync + 'static {}
-
-  #[cfg(all(feature = "send", feature = "static", not(feature = "sync")))]
-  impl<T> Bounds for T where T: Send + 'static {}
-
-  #[cfg(all(feature = "send", feature = "sync", feature = "static"))]
-  impl<T> Bounds for T where T: Send + Sync + 'static {}
-
-  #[cfg(not(any(feature = "debug", feature = "display", feature = "error")))]
-  pub trait Printable {}
-
-  #[cfg(not(any(feature = "debug", feature = "display", feature = "error")))]
-  impl<T> Printable for T {}
-
-  #[cfg(all(feature = "debug", not(any(feature = "display", feature = "error"))))]
-  pub trait Printable: core::fmt::Debug {}
-
-  #[cfg(all(feature = "debug", not(any(feature = "display", feature = "error"))))]
-  impl<T> Printable for T where T: core::fmt::Debug {}
-
-  #[cfg(all(feature = "display", not(any(feature = "debug", feature = "error"))))]
-  pub trait Printable: core::fmt::Display {}
-
-  #[cfg(all(feature = "display", not(any(feature = "debug", feature = "error"))))]
-  impl<T> Printable for T where T: core::fmt::Display {}
-
-  #[cfg(all(feature = "display", feature = "debug", not(any(feature = "error"))))]
-  pub trait Printable: core::fmt::Display + core::fmt::Debug {}
-
-  #[cfg(all(feature = "display", feature = "debug", not(any(feature = "error"))))]
-  impl<T> Printable for T where T: core::fmt::Display + core::fmt::Debug {}
-
-  #[cfg(feature = "error")]
-  pub trait Printable: core::error::Error {}
-
-  #[cfg(feature = "error")]
-  impl<T> Printable for T where T: core::error::Error {}
-
-  #[cfg(not(any(feature = "send", feature = "sync", feature = "static",)))]
-  impl<T> ErrorBounds for T where T: Printable {}
-
-  #[cfg(all(feature = "sync", not(any(feature = "send", feature = "static"))))]
-  impl<T> ErrorBounds for T where T: Printable + Sync {}
-
-  #[cfg(all(feature = "send", not(any(feature = "sync", feature = "static"))))]
-  impl<T> ErrorBounds for T where T: Printable + Send {}
-
-  #[cfg(all(feature = "static", not(any(feature = "send", feature = "sync"))))]
-  impl<T> ErrorBounds for T where T: Printable + 'static {}
-
-  #[cfg(all(feature = "sync", feature = "send", not(feature = "static")))]
-  impl<T> ErrorBounds for T where T: Printable + Send + Sync {}
-
-  #[cfg(all(feature = "sync", feature = "static", not(feature = "send")))]
-  impl<T> ErrorBounds for T where T: Printable + Sync + 'static {}
-
-  #[cfg(all(feature = "send", feature = "static", not(feature = "sync")))]
-  impl<T> ErrorBounds for T where T: Printable + Send + 'static {}
-
-  #[cfg(all(feature = "send", feature = "sync", feature = "static"))]
-  impl<T> ErrorBounds for T where T: Printable + Send + Sync + 'static {}
-
-  doc!(@error_bounds {
-    #[cfg(not(any(feature = "send", feature = "sync", feature = "static",)))]
-    pub trait ErrorBounds: Printable {}
-
-    #[cfg(all(feature = "sync", not(any(feature = "send", feature = "static"))))]
-    pub trait ErrorBounds: Printable + Sync {}
-
-    #[cfg(all(feature = "send", not(any(feature = "sync", feature = "static"))))]
-    pub trait ErrorBounds: Printable + Send {}
-
-    #[cfg(all(feature = "static", not(any(feature = "send", feature = "sync"))))]
-    pub trait ErrorBounds: Printable + 'static {}
-
-    #[cfg(all(feature = "sync", feature = "send", not(feature = "static")))]
-    pub trait ErrorBounds: Printable + Send + Sync {}
-
-    #[cfg(all(feature = "sync", feature = "static", not(feature = "send")))]
-    pub trait ErrorBounds: Printable + Sync + 'static {}
-
-    #[cfg(all(feature = "send", feature = "static", not(feature = "sync")))]
-    pub trait ErrorBounds: Printable + Send + 'static {}
-
-    #[cfg(all(feature = "send", feature = "sync", feature = "static"))]
-    pub trait ErrorBounds: Printable + Send + Sync + 'static {}
-  });
-}
+mod sealed;
 
 /// A type can be encode to a buffer.
 pub trait LengthDelimitedEncoder {
@@ -270,7 +121,7 @@ pub use string::*;
 
 #[cfg(test)]
 mod fuzz_tests {
-  use core::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4};
+  use core::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4, SocketAddrV6};
 
   use super::*;
   use quickcheck_macros::quickcheck;
@@ -298,6 +149,10 @@ mod fuzz_tests {
 
     // Test length delimited encoding/decoding
     if let Ok(written) = value.encode_length_delimited(&mut buffer) {
+      if written != value.encoded_length_delimited_len() {
+        return false;
+      }
+
       if let Ok((read, decoded)) = T::decode_length_delimited(&buffer[..written]) {
         return read == written && value == decoded;
       }
@@ -306,92 +161,44 @@ mod fuzz_tests {
     false
   }
 
-  // Primitive type roundtrip tests
-  #[quickcheck]
-  fn fuzz_u8_roundtrip(x: u8) -> bool {
-    test_roundtrip(x)
+  macro_rules! roundtrip {
+    ($(
+      $(#[$meta:meta])*
+      $ty:ty
+    ), +$(,)?) => {
+      paste::paste! {
+        $(
+          #[quickcheck]
+          $(#[$meta])*
+          fn [<fuzz_ $ty:snake _roundtrip>](val: $ty) -> bool {
+            test_roundtrip(val)
+          }
+        )*
+      }
+    };
   }
 
-  #[quickcheck]
-  fn fuzz_u16_roundtrip(x: u16) -> bool {
-    test_roundtrip(x)
-  }
+  roundtrip!(
+    u8, u16, u32, u64, u128,
+    i8, i16, i32, i64, i128,
+    f32, f64,
+    bool,
+    char,
+    Ipv4Addr, Ipv6Addr,
+    SocketAddrV4, SocketAddrV6,
+    #[cfg(any(feature = "std", feature = "alloc"))]
+    String,
+  );
 
   #[quickcheck]
-  fn fuzz_u32_roundtrip(x: u32) -> bool {
-    test_roundtrip(x)
+  fn fuzz_fixed_array_roundtrip(a: u8, b: u8, c: u8, d: u8) -> bool {
+    test_roundtrip([a, b, c, d])
   }
 
-  #[quickcheck]
-  fn fuzz_u64_roundtrip(x: u64) -> bool {
-    test_roundtrip(x)
-  }
-
-  #[quickcheck]
-  fn fuzz_i8_roundtrip(x: i8) -> bool {
-    test_roundtrip(x)
-  }
-
-  #[quickcheck]
-  fn fuzz_i16_roundtrip(x: i16) -> bool {
-    test_roundtrip(x)
-  }
-
-  #[quickcheck]
-  fn fuzz_i32_roundtrip(x: i32) -> bool {
-    test_roundtrip(x)
-  }
-
-  #[quickcheck]
-  fn fuzz_i64_roundtrip(x: i64) -> bool {
-    test_roundtrip(x)
-  }
-
-  #[quickcheck]
-  fn fuzz_bool_roundtrip(x: bool) -> bool {
-    test_roundtrip(x)
-  }
-
-  #[quickcheck]
-  fn fuzz_char_roundtrip(x: char) -> bool {
-    test_roundtrip(x)
-  }
-
-  // String roundtrip test
-  #[cfg(any(feature = "std", feature = "alloc"))]
-  #[quickcheck]
-  fn fuzz_string_roundtrip(s: String) -> bool {
-    test_roundtrip(s)
-  }
-
-  // Network type roundtrip tests
-  #[quickcheck]
-  fn fuzz_ipv4_roundtrip(val: Ipv4Addr) -> bool {
-    test_roundtrip(val)
-  }
-
-  #[quickcheck]
-  #[allow(clippy::too_many_arguments)]
-  fn fuzz_ipv6_roundtrip(val: Ipv6Addr) -> bool {
-    test_roundtrip(val)
-  }
-
-  #[quickcheck]
-  fn fuzz_socketv4_roundtrip(a: u8, b: u8, c: u8, d: u8, port: u16) -> bool {
-    test_roundtrip(SocketAddrV4::new(Ipv4Addr::new(a, b, c, d), port))
-  }
-
-  // Byte array roundtrip tests
   #[quickcheck]
   #[cfg(any(feature = "std", feature = "alloc"))]
   fn fuzz_bytes_roundtrip(bytes: Vec<u8>) -> bool {
     test_roundtrip(bytes)
-  }
-
-  // Fixed size array roundtrip test
-  #[quickcheck]
-  fn fuzz_fixed_array_roundtrip(a: u8, b: u8, c: u8, d: u8) -> bool {
-    test_roundtrip([a, b, c, d])
   }
 
   // Test encoding with insufficient buffer
