@@ -5,11 +5,11 @@ edition = "2021"
 repository = "https://github.com/al8n/length-delimited"
 homepage = "https://github.com/al8n/length-delimited"
 documentation = "https://docs.rs/length-delimited"
-description = "A trait for length-delimited encoding"
+description = "Protobuf like length-delimited encoding/decoding"
 license = "MIT OR Apache-2.0"
 rust-version = "1.81.0"
-keywords = ["serialization", "encoding", "decoding", "leb128"]
-categories = ["encoding", "no-std"]
+keywords = ["serialization", "encoding", "decoding", "leb128", "protobuf"]
+categories = ["network-programming", "no-std"]
 
 [features]
 default = ["std", "send", "sync", "static", "error"]
