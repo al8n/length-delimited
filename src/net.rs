@@ -90,7 +90,7 @@ macro_rules! net_impl {
       }
 
       impl LengthDelimitedDecoder for $ty {
-        type Error = DecodeVarintError;
+        type Error = DecodeSocketAddrError;
 
         fn decode(src: &[u8]) -> Result<(usize, Self), Self::Error>
         where
@@ -98,7 +98,7 @@ macro_rules! net_impl {
         {
           let (read, ip) = $inner::decode(src)?;
           if read + 2 > src.len() {
-            return Err(DecodeVarintError::IncompleteBuffer(IncompleteBuffer::with_information((read + 2) as u64, src.len() as u64)));
+            return Err(Self::Error::IncompleteBuffer(IncompleteBuffer::with_information((read + 2) as u64, src.len() as u64)));
           }
 
           let port = u16::from_be_bytes([src[read], src[read + 1]]);
@@ -111,7 +111,7 @@ macro_rules! net_impl {
         {
           let (read, ip) = $inner::decode_length_delimited(src)?;
           if read + 2 > src.len() {
-            return Err(DecodeVarintError::IncompleteBuffer(IncompleteBuffer::with_information((read + 2) as u64, src.len() as u64)));
+            return Err(Self::Error::IncompleteBuffer(IncompleteBuffer::with_information((read + 2) as u64, src.len() as u64)));
           }
 
           let port = u16::from_be_bytes([src[read], src[read + 1]]);
@@ -124,3 +124,25 @@ macro_rules! net_impl {
 
 net_impl!(@ip Ipv4Addr(u32), Ipv6Addr(u128),);
 net_impl!(@sock SocketAddrV4(Ipv4Addr), SocketAddrV6(Ipv6Addr, 0, 0));
+
+/// An error that can occur when decoding a `SocketAddrV4` or `SocketAddrV6` from bytes.
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+pub enum DecodeSocketAddrError {
+  /// The buffer is incomplete.
+  #[error(transparent)]
+  IncompleteBuffer(#[from] IncompleteBuffer),
+  /// The IP address could not be decoded.
+  #[error("value is not a valid IP address")]
+  InvalidIpAddress,
+}
+
+impl From<DecodeVarintError> for DecodeSocketAddrError {
+  fn from(e: DecodeVarintError) -> Self {
+    match e {
+      DecodeVarintError::Underflow => {
+        DecodeSocketAddrError::IncompleteBuffer(IncompleteBuffer::new())
+      }
+      _ => DecodeSocketAddrError::InvalidIpAddress,
+    }
+  }
+}

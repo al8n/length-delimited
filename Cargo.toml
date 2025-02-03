@@ -24,7 +24,7 @@ display = []
 error = ["debug", "display"] # Add `core::error::Error` bounds
 
 [dependencies]
-dbutils = { version = "0.12", default-features = false }
+dbutils = { version = "0.13", default-features = false }
 paste = "1"
 thiserror = { version = "2", default-features = false }
 
@@ -33,6 +33,11 @@ bstr1 = { package = "bstr", version = "1", default-features = false, optional = 
 smol_str03 = { package = "smol_str", version = "0.3", default-features = false, optional = true }
 faststr02 = { package = "faststr", version = "0.2", default-features = false, optional = true }
 triomphe01 = { package = "triomphe", version = "0.1", default-features = false, optional = true }
+
+[dev-dependencies]
+arbitrary = "1"
+quickcheck = "1"
+quickcheck_macros = "1"
 
 [package.metadata.docs.rs]
 all-features = true

@@ -1,4 +1,7 @@
-use dbutils::leb128::*;
+use dbutils::{
+  error::{IncompleteBuffer, InsufficientBuffer},
+  leb128::*,
+};
 
 macro_rules! string_impl {
   ($($ty:ty:$converter:ident),+$(,)?) => {
@@ -37,6 +40,13 @@ macro_rules! string_impl {
         where
           Self: Sized,
         {
+          core::str::from_utf8(&src).map_err(Into::into).map(|s| (src.len(), Self::$converter(s)))
+        }
+
+        fn decode_length_delimited(src: &[u8]) -> Result<(usize, Self), Self::Error>
+        where
+          Self: Sized,
+        {
           let (read, bytes) = decode_u64_varint(src)?;
           let len = bytes as usize;
           let required = read + len;
@@ -44,14 +54,15 @@ macro_rules! string_impl {
             return Err(IncompleteBuffer::with_information(required as u64, src.len() as u64).into());
           }
 
-          core::str::from_utf8(&src[read..required]).map_err(Into::into).map(|s| (required, Self::$converter(s)))
-        }
-
-        fn decode_length_delimited(src: &[u8]) -> Result<(usize, Self), Self::Error>
-        where
-          Self: Sized,
-        {
-          Self::decode(src)
+          Self::decode(&src[read..required])
+            .map(|(bytes, this)| (read + bytes, this))
+            .map_err(|e| match e {
+              Self::Error::IncompleteBuffer(_) => IncompleteBuffer::with_information(
+                required as u64,
+                src.len() as u64,
+              ).into(),
+              e => e,
+            })
         }
       }
     )*
@@ -75,7 +86,7 @@ pub enum DecodeUtf8BytesError {
 impl From<DecodeVarintError> for DecodeUtf8BytesError {
   fn from(e: DecodeVarintError) -> Self {
     match e {
-      DecodeVarintError::IncompleteBuffer(e) => Self::IncompleteBuffer(e),
+      DecodeVarintError::Underflow => Self::IncompleteBuffer(IncompleteBuffer::new()),
       DecodeVarintError::Overflow => Self::Overflow,
     }
   }

@@ -1,4 +1,7 @@
-use dbutils::leb128::*;
+use dbutils::{
+  error::{IncompleteBuffer, InsufficientBuffer},
+  leb128::*,
+};
 
 use crate::{LengthDelimitedDecoder, LengthDelimitedEncoder};
 
@@ -28,7 +31,7 @@ macro_rules! bytes_impl {
           let this: &[u8] = self.as_ref();
           let len = this.len();
 
-          let written = match encode_u64_varint(len as u64, buf) {
+          let written = match ::dbutils::leb128::Varint::encode(&(len as u64), buf) {
             Ok(written) => written,
             Err(_) => {
               return Err(InsufficientBuffer::with_information(
@@ -38,13 +41,12 @@ macro_rules! bytes_impl {
             }
           };
 
-          let required = written + len;
-          if required > dst_len {
-            return Err(InsufficientBuffer::with_information(required as u64, dst_len as u64));
-          }
-
-          buf[written..required].copy_from_slice(this);
-          Ok(required)
+          self.encode(&mut buf[written..])
+            .map(|bytes| written + bytes)
+            .map_err(|_| InsufficientBuffer::with_information(
+              (written + len) as u64,
+              dst_len as u64,
+            ))
         }
 
         fn encode(
@@ -88,8 +90,7 @@ macro_rules! bytes_impl {
             return Err(IncompleteBuffer::with_information(required as u64, src.len() as u64).into());
           }
 
-          let data = Self::$from_bytes(&src[read..required]);
-          Ok((required, data))
+          Self::decode(&src[read..required]).map(|(bytes, this)| (read + bytes, this))
         }
       }
     )*
@@ -182,7 +183,7 @@ pub enum DecodeBytesError {
 impl From<DecodeVarintError> for DecodeBytesError {
   fn from(e: DecodeVarintError) -> Self {
     match e {
-      DecodeVarintError::IncompleteBuffer(e) => Self::IncompleteBuffer(e),
+      DecodeVarintError::Underflow => Self::IncompleteBuffer(IncompleteBuffer::new()),
       DecodeVarintError::Overflow => Self::Overflow,
     }
   }
