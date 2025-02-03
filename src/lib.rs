@@ -179,16 +179,71 @@ mod fuzz_tests {
   }
 
   roundtrip!(
-    u8, u16, u32, u64, u128,
-    i8, i16, i32, i64, i128,
-    f32, f64,
+    u8,
+    u16,
+    u32,
+    u64,
+    u128,
+    i8,
+    i16,
+    i32,
+    i64,
+    i128,
     bool,
     char,
-    Ipv4Addr, Ipv6Addr,
-    SocketAddrV4, SocketAddrV6,
+    Ipv4Addr,
+    Ipv6Addr,
+    SocketAddrV4,
     #[cfg(any(feature = "std", feature = "alloc"))]
     String,
   );
+
+  #[quickcheck]
+  fn fuzz_f32_roundtrip(value: f32) -> bool {
+    let mut buffer = vec![0u8; value.encoded_length_delimited_len()];
+
+    // Test length delimited encoding/decoding
+    if let Ok(written) = value.encode_length_delimited(&mut buffer) {
+      if written != value.encoded_length_delimited_len() {
+        return false;
+      }
+
+      if let Ok((read, decoded)) = f32::decode_length_delimited(&buffer[..written]) {
+        if value.is_nan() {
+          return read == written && decoded.is_nan();
+        }
+        return read == written && value == decoded;
+      }
+    }
+
+    false
+  }
+
+  #[quickcheck]
+  fn fuzz_f64_roundtrip(value: f64) -> bool {
+    let mut buffer = vec![0u8; value.encoded_length_delimited_len()];
+
+    // Test length delimited encoding/decoding
+    if let Ok(written) = value.encode_length_delimited(&mut buffer) {
+      if written != value.encoded_length_delimited_len() {
+        return false;
+      }
+
+      if let Ok((read, decoded)) = f64::decode_length_delimited(&buffer[..written]) {
+        if value.is_nan() {
+          return read == written && decoded.is_nan();
+        }
+        return read == written && value == decoded;
+      }
+    }
+
+    false
+  }
+
+  #[quickcheck]
+  fn fuzz_socket_addr_v6_roundtrip(ip: Ipv6Addr, port: u16) -> bool {
+    test_roundtrip(SocketAddrV6::new(ip, port, 0, 0))
+  }
 
   #[quickcheck]
   fn fuzz_fixed_array_roundtrip(a: u8, b: u8, c: u8, d: u8) -> bool {
