@@ -24,7 +24,7 @@ display = []
 error = ["debug", "display"] # Add `core::error::Error` bounds
 
 [dependencies]
-dbutils = { version = "0.13", default-features = false }
+dbutils = { version = "0.14", default-features = false }
 paste = "1"
 thiserror = { version = "2", default-features = false }
 
